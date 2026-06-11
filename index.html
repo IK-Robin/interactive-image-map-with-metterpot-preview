@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Hospitality Map</title>
+
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0;font-family:Arial,sans-serif;background:#f4f1ec;color:#1f2933; }
+  .map-section { width:100%; padding:50px 20px; background:linear-gradient(135deg,#f7f2e8,#e8efe7); }
+  .map-container { max-width:1150px; margin:auto; }
+  .map-header { text-align:center; margin-bottom:30px; }
+  .map-header h2 { font-size:36px; color:#173c2f; margin:0 0 10px; }
+  .map-header p { font-size:16px; color:#5f6f68; margin:0; }
+  .svg-map-wrap { position:relative;width:100%;overflow:hidden;border-radius:24px;box-shadow:0 25px 70px rgba(0,0,0,0.18); background:#dde6d8; }
+  svg { width:100%; height:auto; display:block; }
+  .js-map-hotspot { cursor:pointer; transition: opacity 0.25s ease, fill 0.25s ease; }
+  .js-map-hotspot:hover { opacity:0.55; }
+
+  .popup-overlay { position:fixed; inset:0; background: rgba(10,20,16,0.68); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+  .popup-overlay.active { display:flex; }
+  .property-popup { width:100%; max-width:850px; background:#fff; border-radius:24px; overflow:hidden; box-shadow:0 30px 90px rgba(0,0,0,0.35); position:relative; animation:popupIn 0.3s ease; }
+  @keyframes popupIn { from { transform:translateY(20px) scale(0.96); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+  .popup-close { position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%; border:none; background:rgba(0,0,0,0.7); color:white; font-size:24px; cursor:pointer; z-index:2; line-height:1; }
+  .popup-media { width:100%; height:380px; background:#111; }
+  .popup-media iframe { width:100%; height:100%; border:0; }
+  .popup-content { padding:28px; }
+  .popup-content span { display:inline-block; background:#eaf4ef; color:#1f6b4d; padding:7px 12px; border-radius:999px; font-size:13px; font-weight:700; margin-bottom:12px; }
+  .popup-content h3 { margin:0 0 12px; font-size:28px; color:#173c2f; }
+  .popup-content p { margin:0 0 18px; color:#55615c; line-height:1.6; }
+  .property-details { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:22px 0; }
+  .detail-box { background:#f5f7f4; padding:16px; border-radius:14px; text-align:center; }
+  .detail-box strong { display:block; color:#173c2f; font-size:18px; margin-bottom:4px; }
+  .detail-box small { color:#6b756f; }
+  .popup-actions { display:flex; gap:12px; flex-wrap:wrap; }
+  .btn { display:inline-block; padding:13px 20px; border-radius:12px; text-decoration:none; font-weight:700; transition:0.25s; }
+  .btn-primary { background:#173c2f; color:white; }
+  .btn-primary:hover { background:#245c49; }
+  .btn-secondary { background:#f1ede4; color:#173c2f; }
+  .btn-secondary:hover { background:#e2d8c6; }
+  @media(max-width:768px){ .map-header h2{font-size:28px;} .popup-media{height:260px;} .popup-content{padding:22px;} .popup-content h3{font-size:23px;} .property-details{grid-template-columns:1fr;} }
+
+  /* Tooltip */
+  #mapTooltip { display:none; position:absolute; padding:6px 12px; background:rgba(0,0,0,0.75); color:#fff; border-radius:6px; font-size:14px; pointer-events:none; z-index:9999; }
+</style>
+</head>
+<body>
+
+<section class="map-section">
+  <div class="map-container">
+    <div class="map-header">
+      <h2>Interactive Hospitality Property Map</h2>
+      <p>Hover and click on the hotspots to see details and Matterport tours.</p>
+    </div>
+
+    <div class="svg-map-wrap">
+    <svg id="Layer_1" data-name="Layer 1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1265.28 710.88">
+    <defs>
+        <style>.cls-1{fill:#382222;stroke:#000;stroke-miterlimit:10;opacity:0.19;}.cls-2{font-size:19px;}.cls-2,.cls-3{fill:#fffcf2;font-family:MyriadPro-Regular, Myriad Pro;}.cls-3{font-size:23.58px;}</style>
+    </defs>
+    <image width="5272" height="2962" transform="translate(0.26 3.06) scale(0.24)" xlink:href="./DJI_20260521235726_0580_Da.jpg"/>
+    <rect id="house_1"  class="cls-1" x="591.81" y="514.23" width="153.19" height="138.38"/>
+    <text class="cls-2" transform="translate(622.52 537.62)">House 1 </text>
+    <rect id="house_2"  class="cls-1" x="244.07" y="419.68" width="190.12" height="171.74"/>
+    <text class="cls-3" transform="translate(289.78 505.55)">House 2 </text>
+</svg>
+
+      <div id="mapTooltip"></div>
+    </div>
+  </div>
+</section>
+
+<div class="popup-overlay" id="propertyPopup">
+  <div class="property-popup">
+    <button class="popup-close" onclick="closePopup()">×</button>
+    <div class="popup-media"><iframe src="" allowfullscreen allow="xr-spatial-tracking"></iframe></div>
+    <div class="popup-content">
+      <span>Featured Property</span>
+      <h3>Title</h3>
+      <p>Description here</p>
+      <div class="property-details">
+        <div class="detail-box"><strong>-</strong><small>Bedrooms</small></div>
+        <div class="detail-box"><strong>-</strong><small>Bathrooms</small></div>
+        <div class="detail-box"><strong>-</strong><small>Virtual Tour</small></div>
+      </div>
+      <div class="popup-actions">
+        <a class="btn btn-primary" href="#" target="_blank">Open Matterport Tour</a>
+        <a class="btn btn-secondary" href="#">View Property Details</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const properties=[
+  {id:"house_1",title:"Luxury Villa 1",badge:"Featured",description:"Luxury Villa 1 description.",bedrooms:"4",bathrooms:"3",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_2",title:"Luxury Villa 2",badge:"Available",description:"Luxury Villa 2 description.",bedrooms:"5",bathrooms:"4",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_3",title:"Luxury Villa 3",badge:"Premium",description:"Luxury Villa 3 description.",bedrooms:"3",bathrooms:"2",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_4",title:"Luxury Villa 4",badge:"Premium",description:"Luxury Villa 4 description.",bedrooms:"4",bathrooms:"3",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_5",title:"Luxury Villa 5",badge:"Available",description:"Luxury Villa 5 description.",bedrooms:"2",bathrooms:"2",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_6",title:"Luxury Villa 6",badge:"Featured",description:"Luxury Villa 6 description.",bedrooms:"4",bathrooms:"3",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_7",title:"Luxury Villa 7",badge:"Available",description:"Luxury Villa 7 description.",bedrooms:"3",bathrooms:"2",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_8",title:"Luxury Villa 8",badge:"Premium",description:"Luxury Villa 8 description.",bedrooms:"5",bathrooms:"4",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_9",title:"Luxury Villa 9",badge:"Premium",description:"Luxury Villa 9 description.",bedrooms:"4",bathrooms:"4",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"},
+  {id:"house_10",title:"Luxury Villa 10",badge:"Available",description:"Luxury Villa 10 description.",bedrooms:"6",bathrooms:"5",type:"3D Tour",tour:"https://my.matterport.com/show/?m=RWi6KNWjDK7",detailsLink:"#"}
+];
+
+const popup=document.getElementById("propertyPopup");
+const popupBadge=popup.querySelector(".popup-content span");
+const popupTitle=popup.querySelector(".popup-content h3");
+const popupDescription=popup.querySelector(".popup-content p");
+const popupIframe=popup.querySelector(".popup-media iframe");
+const popupPrimaryButton=popup.querySelector(".btn-primary");
+const popupSecondaryButton=popup.querySelector(".btn-secondary");
+const detailBoxes=popup.querySelectorAll(".detail-box");
+const tooltip=document.getElementById("mapTooltip");
+let tooltipLeft=0,tooltipTop=0;
+
+function getClientPoint(ev){
+  if(ev.touches && ev.touches[0]) return {x:ev.touches[0].clientX,y:ev.touches[0].clientY};
+  if(ev.changedTouches && ev.changedTouches[0]) return {x:ev.changedTouches[0].clientX,y:ev.changedTouches[0].clientY};
+  return {x:ev.clientX,y:ev.clientY};
+}
+
+function placeSmartInContainer(el,ev,pad=8){
+  el.style.position="absolute";
+  const parent=el.offsetParent||document.body;
+  const rect=parent.getBoundingClientRect();
+  const cs=getComputedStyle(parent);
+  const padL=parseFloat(cs.paddingLeft)||0;
+  const padT=parseFloat(cs.paddingTop)||0;
+  const padR=parseFloat(cs.paddingRight)||0;
+  const padB=parseFloat(cs.paddingBottom)||0;
+  const prevDisp=el.style.display;
+  const prevVis=el.style.visibility;
+  el.style.visibility="hidden";
+  el.style.display="block";
+  const w=el.offsetWidth,h=el.offsetHeight;
+  const pt=getClientPoint(ev);
+  const relX=pt.x-rect.left-padL;
+  const relY=pt.y-rect.top-padT;
+  const contentW=rect.width-padL-padR;
+  const contentH=rect.height-padT-padB;
+  let left=relX+pad,top=relY+pad;
+  if(left+w>contentW) left=relX-w-pad;
+  left=Math.max(0,Math.min(left,contentW-w));
+  if(top+h>contentH) top=relY-h-pad;
+  top=Math.max(0,Math.min(top,contentH-h));
+  el.style.left=left+padL+tooltipLeft+"px";
+  el.style.top=top+padT+tooltipTop+"px";
+  el.style.visibility=prevVis||"visible";
+  el.style.display=prevDisp||"block";
+}
+
+function openPropertyPopup(property){
+  popupBadge.textContent=property.badge||"Property";
+  popupTitle.textContent=property.title||"Property Details";
+  popupDescription.textContent=property.description||"";
+  popupIframe.src=property.tour||"";
+  popupPrimaryButton.href=property.tour||"#";
+  popupSecondaryButton.href=property.detailsLink||"#";
+  if(detailBoxes[0]){detailBoxes[0].querySelector("strong").textContent=property.bedrooms||"-"; detailBoxes[0].querySelector("small").textContent="Bedrooms";}
+  if(detailBoxes[1]){detailBoxes[1].querySelector("strong").textContent=property.bathrooms||"-"; detailBoxes[1].querySelector("small").textContent="Bathrooms";}
+  if(detailBoxes[2]){detailBoxes[2].querySelector("strong").textContent=property.type||"3D"; detailBoxes[2].querySelector("small").textContent="Virtual Tour";}
+  popup.classList.add("active");
+  document.body.style.overflow="hidden";
+}
+
+function closePopup(){
+  popup.classList.remove("active");
+  document.body.style.overflow="";
+  popupIframe.src="";
+}
+
+function initInteractiveMap(){
+  properties.forEach(function(property){
+    const hotspot=document.getElementById(property.id);
+    if(!hotspot){console.warn("SVG hotspot not found:",property.id);return;}
+    hotspot.classList.add("js-map-hotspot");
+    hotspot.style.cursor="pointer";
+    hotspot.setAttribute("tabindex","0");
+    hotspot.setAttribute("role","button");
+    hotspot.setAttribute("aria-label","Open details for "+property.title);
+
+    // Click to open popup
+    hotspot.addEventListener("click",function(event){event.stopPropagation();openPropertyPopup(property);});
+
+    hotspot.addEventListener("keydown",function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();openPropertyPopup(property);}});
+
+    // Tooltip
+    hotspot.addEventListener("mousemove",function(ev){tooltip.textContent=property.title; tooltip.style.display="block"; placeSmartInContainer(tooltip,ev,10);});
+    hotspot.addEventListener("mouseleave",function(){tooltip.style.display="none";});
+  });
+}
+
+popup.addEventListener("click",function(event){if(event.target===popup) closePopup();});
+document.addEventListener("keydown",function(event){if(event.key==="Escape"&&popup.classList.contains("active")) closePopup();});
+document.addEventListener("DOMContentLoaded",initInteractiveMap);
+</script>
+
+</body>
+</html>

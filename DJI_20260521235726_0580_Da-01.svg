@@ -1,0 +1,12 @@
+<svg id="Layer_1" data-name="Layer 1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1265.28 710.88">
+    <defs>
+        <style>.cls-1{fill:#382222;stroke:#000;stroke-miterlimit:10;opacity:0.19;}.cls-2{font-size:19px;}.cls-2,.cls-3{fill:#fffcf2;font-family:MyriadPro-Regular, Myriad Pro;}.cls-3{font-size:23.58px;}</style>
+    </defs>
+    <image width="5272" height="2962" transform="translate(0.26 3.06) scale(0.24)" xlink:href="./DJI_20260521235726_0580_Da.jpg"/>
+    <rect id="house_1"  class="cls-1" x="591.81" y="514.23" width="153.19" height="138.38"/>
+    <text class="cls-2" transform="translate(622.52 537.62)">House 1 </text>
+    <rect id="house_2"  class="cls-1" x="244.07" y="419.68" width="190.12" height="171.74"/>
+    <text class="cls-3" transform="translate(289.78 505.55)">House 2 </text>
+</svg>
